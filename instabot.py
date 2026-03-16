@@ -1,3 +1,10 @@
+import streamlit.components.v1 as components
+
+components.html("""
+<head>
+<meta name="7searchppc" content="5b8d3e361b46def86de68b945a1f71cd"/>
+</head>
+""", height=0)
 
 import streamlit as st
 from supabase import create_client
