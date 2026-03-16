@@ -2,53 +2,52 @@ import streamlit as st
 from supabase import create_client
 import os
 
-# 1. Verification Meta Tag for 7Search PPC
-st.markdown('<script>var meta=document.createElement("meta");meta.name="7searchppc";meta.content="194331a7fabe56c358637d4c992dbb62";document.getElementsByTagName("head")[0].appendChild(meta);</script>', unsafe_allow_html=True)
+# --- 1. DEBUGGER (Only shows if there is an error) ---
+def check_secrets():
+    """Checks if secrets are loaded correctly."""
+    try:
+        test_url = st.secrets["SUPABASE_URL"]
+        return True
+    except Exception:
+        return False
 
-# 2. Database Connection
-# This looks for SUPABASE_URL and SUPABASE_KEY in your .streamlit/secrets.toml
-try:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    supabase = create_client(url, key)
-except Exception as e:
-    st.error("⚠️ Secrets Configuration Error!")
-    st.info("Check that your .streamlit/secrets.toml file exists and has the correct keys.")
-    st.stop()
-
-# 3. Page Configuration
+# --- 2. PAGE CONFIG ---
 st.set_page_config(page_title="Queen Arsenal Hub", page_icon="👑", layout="wide")
 
-# 4. Custom CSS for Styling
-st.markdown("""
-    <style>
-    .main { background-color: #0e1117; }
-    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #ff4b4b; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
+# Verification Meta Tag for 7Search PPC
+st.markdown('<script>var meta=document.createElement("meta");meta.name="7searchppc";meta.content="194331a7fabe56c358637d4c992dbb62";document.getElementsByTagName("head")[0].appendChild(meta);</script>', unsafe_allow_html=True)
 
-# 5. State Management
+# --- 3. DATABASE CONNECTION ---
+if not check_secrets():
+    st.error("⚠️ Secrets Configuration Error!")
+    st.write(f"I am looking for a file at: `{os.path.join(os.getcwd(), '.streamlit', 'secrets.toml')}`")
+    st.info("💡 **Quick Fix:** Make sure your folder is named `.streamlit` and your file is `secrets.toml` (not `secrets.toml.txt`).")
+    st.stop()
+
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase = create_client(url, key)
+
+# --- 4. STATE MANAGEMENT ---
 if 'page' not in st.session_state: 
     st.session_state.page = "lobby"
 if 'user_email' not in st.session_state: 
     st.session_state.user_email = ""
 
-# --- 6. LOBBY INTERFACE ---
+# --- 5. LOBBY INTERFACE ---
 if st.session_state.page == "lobby":
     st.title("👑 Queen Bot Lobby")
-    st.write("Welcome to the ultimate Free Fire Glory Pushing Hub.")
+    st.write("---")
     
-    with st.container():
-        email = st.text_input("Enter your Gmail Address", placeholder="example@gmail.com")
-        
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        email = st.text_input("Enter Gmail", placeholder="yourname@gmail.com")
         if st.button("🚀 Enter Dashboard"):
             if email and "@" in email:
                 try:
-                    # Check if user exists in Supabase
+                    # Check/Create user in Supabase
                     user_query = supabase.table("users").select("*").eq("email", email).execute()
-                    
                     if not user_query.data:
-                        # Register new user if not found
                         supabase.table("users").insert({"email": email, "coins": 0}).execute()
                     
                     st.session_state.user_email = email
@@ -56,16 +55,16 @@ if st.session_state.page == "lobby":
                     st.rerun()
                 except Exception as e:
                     st.error(f"Database Error: {e}")
-                    st.info("Make sure you disabled RLS or added a policy in Supabase.")
+                    st.info("Hint: Did you disable RLS in the Supabase Table Editor?")
             else:
-                st.warning("Please enter a valid Gmail address.")
+                st.warning("Please enter a valid Gmail.")
 
-# --- 7. MAIN DASHBOARD ---
+# --- 6. DASHBOARD INTERFACE ---
 elif st.session_state.page == "dashboard":
-    # Sidebar Info
+    # Sidebar
     st.sidebar.title("💎 Queen Menu")
     
-    # Real-time Coin Fetching
+    # Live Coin Count
     try:
         user_res = supabase.table("users").select("coins").eq("email", st.session_state.user_email).execute()
         balance = user_res.data[0]['coins'] if user_res.data else 0
@@ -73,41 +72,36 @@ elif st.session_state.page == "dashboard":
     except:
         st.sidebar.error("Coin Sync Failed")
 
-    st.sidebar.write(f"Logged in as: **{st.session_state.user_email}**")
-    
+    st.sidebar.write(f"Logged in: **{st.session_state.user_email}**")
     menu = st.sidebar.radio("Navigate", ["🔥 Guild Glory Pusher", "🤑 Earn Coins", "🏆 Leaderboard"])
     
     if st.sidebar.button("Logout"):
         st.session_state.page = "lobby"
-        st.session_state.user_email = ""
         st.rerun()
 
-    # --- CONTENT ROUTING ---
+    # --- ROUTING ---
     if menu == "🔥 Guild Glory Pusher":
-        # Fixed: Using utf-8 encoding to prevent 'charmap' errors with emojis
+        # Fixed: utf-8 encoding for emojis
         try:
             with open("glory_push.py", "r", encoding="utf-8") as f:
-                code = f.read()
-                exec(code)
+                exec(f.read())
         except FileNotFoundError:
-            st.error("❌ glory_push.py not found in your folder.")
+            st.error("❌ `glory_push.py` not found in folder.")
         except Exception as e:
             st.error(f"❌ Script Error: {e}")
 
     elif menu == "🤑 Earn Coins":
         st.header("🤑 Earn Coins")
-        st.write("Watch ads or complete tasks to earn coins for glory pushing.")
-        # You can place the contents of earn.py here or exec() it
-        st.warning("Earning module is being updated with the ad-network.")
+        st.write("Complete the tasks below to fuel your Glory Pushing.")
+        # Place earn.py logic here or use:
+        # with open("earn.py", "r", encoding="utf-8") as f: exec(f.read())
+        st.info("Task list updating...")
 
     elif menu == "🏆 Leaderboard":
         st.header("🏆 Top Glory Pushers")
         try:
             leaders = supabase.table("users").select("email, coins").order("coins", desc=True).limit(5).execute()
-            if leaders.data:
-                for idx, person in enumerate(leaders.data):
-                    st.write(f"**{idx+1}. {person['email']}** — {person['coins']} Coins")
-            else:
-                st.write("No data available yet.")
+            for i, p in enumerate(leaders.data):
+                st.write(f"{i+1}. **{p['email']}** — {p['coins']} Coins")
         except:
-            st.write("Leaderboard syncing...")
+            st.write("Syncing leaderboard...")
