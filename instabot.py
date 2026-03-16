@@ -1,52 +1,32 @@
-
 import streamlit as st
 from supabase import create_client
-import os
 
-# -----------------------------
-# 1. 7SearchPPC Verification
-# -----------------------------
+# 1. 7SearchPPC verification meta tag
+
 st.markdown(
 """
+
 <script>
 var meta=document.createElement("meta");
 meta.name="7searchppc";
 meta.content="194331a7fabe56c358637d4c992dbb62";
 document.getElementsByTagName("head")[0].appendChild(meta);
 </script>
+
 """,
 unsafe_allow_html=True
 )
 
-# -----------------------------
-# 2. PAGE CONFIG
-# -----------------------------
-st.set_page_config(
-    page_title="Queen Arsenal Hub",
-    page_icon="👑",
-    layout="wide"
-)
+# 2. Page config
 
-# -----------------------------
-# 3. DATABASE CONNECTION
-# -----------------------------
-try:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    supabase = create_client(url, key)
+st.set_page_config(page_title="Queen Arsenal Hub", page_icon="👑", layout="wide")
 
-except Exception:
-    st.error("⚠️ Supabase Secrets Error!")
-    st.info("Add SUPABASE_URL and SUPABASE_KEY in Streamlit secrets.")
-    st.stop()
+# 3. Custom style
 
-# -----------------------------
-# 4. CUSTOM UI
-# -----------------------------
-st.markdown(
-"""
+st.markdown("""
+
 <style>
-.main {background-color:#0e1117; color:white;}
+.main { background-color:#0e1117; color:white; }
 
 .stButton>button{
 width:100%;
@@ -62,148 +42,142 @@ border:none;
 background:#ff2e2e;
 }
 </style>
-""",
-unsafe_allow_html=True
-)
 
-# -----------------------------
-# 5. SESSION STATE
-# -----------------------------
+""", unsafe_allow_html=True)
+
+# 4. Database connection
+
+try:
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+supabase = create_client(url, key)
+except Exception:
+st.error("Supabase secrets missing.")
+st.stop()
+
+# 5. Session state
+
 if "page" not in st.session_state:
-    st.session_state.page = "lobby"
+st.session_state.page = "lobby"
 
 if "user_email" not in st.session_state:
-    st.session_state.user_email = ""
+st.session_state.user_email = ""
 
-# -----------------------------
-# 6. LOBBY PAGE
-# -----------------------------
+# ---------------- LOBBY ----------------
+
 if st.session_state.page == "lobby":
 
-    st.title("👑 Queen Bot Lobby")
-    st.write("Welcome to the Free Fire Glory Pushing Hub")
+```
+st.title("👑 Queen Bot Lobby")
+st.write("Welcome to the Free Fire Glory Pushing Hub")
 
-    email = st.text_input("Enter Gmail Address")
+email = st.text_input("Enter Gmail Address")
 
-    if st.button("🚀 Enter Dashboard"):
+if st.button("Enter Dashboard"):
 
-        if email and "@" in email:
-
-            try:
-
-                user = supabase.table("users").select("*").eq("email", email).execute()
-
-                if not user.data:
-                    supabase.table("users").insert(
-                        {"email": email, "coins": 0}
-                    ).execute()
-
-                st.session_state.user_email = email
-                st.session_state.page = "dashboard"
-                st.rerun()
-
-            except Exception as e:
-                st.error(f"Database Error: {e}")
-
-        else:
-            st.warning("Enter valid Gmail")
-
-# -----------------------------
-# 7. DASHBOARD
-# -----------------------------
-elif st.session_state.page == "dashboard":
-
-    st.sidebar.title("💎 Queen Menu")
-    st.sidebar.write(f"Logged as: {st.session_state.user_email}")
-
-    try:
-        res = supabase.table("users").select("coins").eq(
-            "email", st.session_state.user_email
-        ).execute()
-
-        balance = res.data[0]["coins"] if res.data else 0
-        st.sidebar.metric("Coins", balance)
-
-    except:
-        balance = 0
-        st.sidebar.error("Coin Sync Failed")
-
-    menu = st.sidebar.radio(
-        "Navigation",
-        ["🔥 Guild Glory Pusher", "🤑 Earn Coins", "🏆 Leaderboard"]
-    )
-
-    if st.sidebar.button("Logout"):
-        st.session_state.page = "lobby"
-        st.session_state.user_email = ""
-        st.rerun()
-
-    # -----------------------------
-    # GLORY PUSHER
-    # -----------------------------
-    if menu == "🔥 Guild Glory Pusher":
-
-        st.header("🔥 Guild Glory Pusher")
+    if email and "@" in email:
 
         try:
+            user = supabase.table("users").select("*").eq("email", email).execute()
 
-            with open("glory_push.py", "r", encoding="utf-8") as f:
-                exec(f.read())
+            if not user.data:
+                supabase.table("users").insert(
+                    {"email": email, "coins": 0}
+                ).execute()
 
-        except FileNotFoundError:
-            st.error("❌ glory_push.py file not found.")
+            st.session_state.user_email = email
+            st.session_state.page = "dashboard"
+            st.rerun()
 
         except Exception as e:
-            st.error(f"❌ Script Error: {e}")
+            st.error(e)
 
-    # -----------------------------
-    # EARN COINS
-    # -----------------------------
-    elif menu == "🤑 Earn Coins":
+    else:
+        st.warning("Enter valid Gmail")
+```
 
-        st.header("🤑 Earn Coins")
-        st.write("Watch ads or complete tasks to earn coins.")
+# ---------------- DASHBOARD ----------------
 
-        if st.button("💰 Claim 10 Coins"):
+elif st.session_state.page == "dashboard":
 
-            try:
+```
+st.sidebar.title("Queen Menu")
+st.sidebar.write(st.session_state.user_email)
 
-                new_balance = balance + 10
+try:
+    res = supabase.table("users").select("coins").eq(
+        "email", st.session_state.user_email
+    ).execute()
 
-                supabase.table("users").update(
-                    {"coins": new_balance}
-                ).eq("email", st.session_state.user_email).execute()
+    balance = res.data[0]["coins"] if res.data else 0
+    st.sidebar.metric("Coins", balance)
 
-                st.success("10 Coins Added!")
+except:
+    balance = 0
 
-                st.rerun()
+menu = st.sidebar.radio(
+    "Navigation",
+    ["Guild Glory Pusher", "Earn Coins", "Leaderboard"]
+)
 
-            except Exception as e:
-                st.error(e)
+if st.sidebar.button("Logout"):
+    st.session_state.page = "lobby"
+    st.session_state.user_email = ""
+    st.rerun()
 
-    # -----------------------------
-    # LEADERBOARD
-    # -----------------------------
-    elif menu == "🏆 Leaderboard":
+# -------- Glory Pusher --------
+if menu == "Guild Glory Pusher":
 
-        st.header("🏆 Top Glory Pushers")
+    st.header("Guild Glory Pusher")
+
+    try:
+        with open("glory_push.py", "r", encoding="utf-8") as f:
+            exec(f.read())
+    except FileNotFoundError:
+        st.error("glory_push.py file not found.")
+    except Exception as e:
+        st.error(e)
+
+# -------- Earn Coins --------
+elif menu == "Earn Coins":
+
+    st.header("Earn Coins")
+
+    if st.button("Claim 10 Coins"):
 
         try:
+            new_balance = balance + 10
 
-            leaders = supabase.table("users").select(
-                "email, coins"
-            ).order("coins", desc=True).limit(5).execute()
+            supabase.table("users").update(
+                {"coins": new_balance}
+            ).eq("email", st.session_state.user_email).execute()
 
-            if leaders.data:
+            st.success("10 Coins Added")
+            st.rerun()
 
-                for i, user in enumerate(leaders.data):
-                    st.write(
-                        f"{i+1}. {user['email']} — {user['coins']} Coins"
-                    )
+        except Exception as e:
+            st.error(e)
 
-            else:
-                st.write("No leaderboard data yet.")
+# -------- Leaderboard --------
+elif menu == "Leaderboard":
 
-        except:
-            st.write("Leaderboard loading...")
+    st.header("Top Users")
+
+    try:
+        leaders = supabase.table("users").select(
+            "email, coins"
+        ).order("coins", desc=True).limit(5).execute()
+
+        if leaders.data:
+
+            for i, user in enumerate(leaders.data):
+                st.write(
+                    f"{i+1}. {user['email']} — {user['coins']} Coins"
+                )
+
+        else:
+            st.write("No data yet.")
+
+    except:
+        st.write("Loading leaderboard...")
 ```
