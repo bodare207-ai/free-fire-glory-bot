@@ -3,12 +3,7 @@ import streamlit as st
 from supabase import create_client
 import streamlit.components.v1 as components
 
-components.html("""
-<head>
-<meta name="7searchppc" content="5b8d3e361b46def86de68b945a1f71cd"/>
-</head>
-""", height=0)
-
+<meta name="monetag" content="39e4b7e52020ed41676ee541cdfd2fb2">
 # -------------------------
 # 1. 7SearchPPC verification
 # -------------------------
