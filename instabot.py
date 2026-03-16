@@ -202,4 +202,3 @@ elif st.session_state.page == "dashboard":
 
         except:
             st.write("Loading leaderboard...")
-```
