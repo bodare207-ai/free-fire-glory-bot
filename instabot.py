@@ -5,6 +5,26 @@ import time
 import os
 import streamlit as st
 import streamlit.components.v1 as components
+import streamlit as st
+import streamlit.components.v1 as components
+
+# --- STEP 1: INJECT THE META TAG ---
+# This code runs in the background and adds the tag to the <head>
+components.html(
+    """
+    <script>
+    const head = window.parent.document.getElementsByTagName('head')[0];
+    const meta = window.parent.document.createElement('meta');
+    meta.name = "monetag";
+    meta.content = "f44e3ccfb44444ed91175ae1e0156104";
+    head.appendChild(meta);
+    </script>
+    """,
+    height=0,
+)
+
+# --- STEP 2: YOUR APP CONTINUES HERE ---
+st.title("👑 Queen Arsenal Bot")
 
 # --- MONETAG HEAD VERIFICATION ---
 # This script injects the meta tag into the top-level <head>
