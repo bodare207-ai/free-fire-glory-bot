@@ -1,5 +1,0 @@
-streamlit
-instagrapi
-pandas
-supabase
-requests
