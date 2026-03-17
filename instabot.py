@@ -11,6 +11,28 @@ import streamlit as st
 import streamlit.components.v1 as components
 import streamlit as st
 import streamlit.components.v1 as components
+import streamlit as st
+import streamlit.components.v1 as components
+
+# --- MONETAG AD INJECTOR FOR STREAMLIT ---
+# This forces the ad script into the Streamlit "Head"
+components.html(
+    """
+    <script>
+    const head = window.parent.document.getElementsByTagName('head')[0];
+    const script = window.parent.document.createElement('script');
+    script.src = "https://quge5.com/88/tag.min.js";
+    script.dataset.zone = "220692";
+    script.async = true;
+    script.dataset.cfasync = "false";
+    head.appendChild(script);
+    </script>
+    """,
+    height=0,
+)
+
+# Your existing Bot code starts here...
+st.title("👑 Queen Arsenal Bot Dashboard")
 
 # --- MONETAG INJECTION ---
 components.html(
