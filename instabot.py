@@ -4,23 +4,23 @@ from supabase import create_client
 import time
 import os
 
-# --- 1. STATIC FILE & AD VERIFICATION HANDLER ---
-# This part allows ad networks to find your verification file if they visit /?file=...
-def serve_verification():
-    query_params = st.query_params
-    if "file" in query_params:
-        filename = query_params["file"]
-        # Make sure the file is inside the 'static' folder in your GitHub
-        filepath = os.path.join("static", filename)
+# --- 1. AD NETWORK "ROOT BRIDGE" & VERIFICATION ---
+# This part makes your Monetag file visible even on Streamlit.
+def handle_ad_verification():
+    # REPLACE this with your actual filename from Monetag
+    v_file = "monetag_39e4b7e52020ed41676ee541cdfd2fb2.html" 
+    
+    # Check if the network is visiting your site to verify
+    if st.query_params.get("verify") == "true":
+        filepath = os.path.join("static", v_file)
         if os.path.exists(filepath):
             with open(filepath, "r") as f:
                 st.write(f.read(), unsafe_allow_html=True)
                 st.stop()
 
-serve_verification()
+handle_ad_verification()
 
-# --- 2. META TAG INJECTION (7Search + Monetag) ---
-# This forces the verification tags into the <head> of your website
+# --- 2. META TAG INJECTION (FOR HEADERS) ---
 components.html(
     """
     <script>
@@ -41,8 +41,8 @@ components.html(
     height=0,
 )
 
-# --- 3. PAGE CONFIG & STYLING ---
-st.set_page_config(page_title="Queen Arsenal Bot", page_icon="👑", layout="wide")
+# --- 3. PAGE UI & STYLING ---
+st.set_page_config(page_title="Queen Arsenal Hub", page_icon="👑", layout="wide")
 
 st.markdown("""
     <style>
@@ -63,21 +63,26 @@ def init_supabase():
         url = st.secrets["SUPABASE_URL"]
         key = st.secrets["SUPABASE_KEY"]
         return create_client(url, key)
-    except Exception as e:
+    except:
         return None
 
 supabase = init_supabase()
 
-# --- 5. APP LOGIC ---
+if not supabase:
+    st.error("⚠️ Database Configuration Missing! Add SUPABASE_URL and KEY to Secrets.")
+    st.stop()
+
+# --- 5. APP NAVIGATION ---
 if 'page' not in st.session_state: st.session_state.page = "login"
 
+# PAGE: LOGIN
 if st.session_state.page == "login":
-    st.title("👑 Queen Arsenal Hub")
-    st.write("Login to access the Cloud Glory Pusher.")
+    st.title("👑 Queen Arsenal Bot")
+    st.write("Enter your Gmail to access the Cloud Glory Pusher.")
     
-    email = st.text_input("Enter Gmail Address", placeholder="example@gmail.com")
+    email = st.text_input("Gmail Address", placeholder="example@gmail.com")
     
-    if st.button("🚀 Enter Dashboard"):
+    if st.button("🚀 Access Dashboard"):
         if email and "@" in email:
             try:
                 # Upsert user into Supabase
@@ -86,10 +91,11 @@ if st.session_state.page == "login":
                 st.session_state.page = "dashboard"
                 st.rerun()
             except Exception as e:
-                st.error(f"Database Error: {e}")
+                st.error(f"❌ Database Error: {e}")
         else:
             st.warning("Please enter a valid Gmail.")
 
+# PAGE: DASHBOARD
 elif st.session_state.page == "dashboard":
     st.sidebar.title("💎 Bot Menu")
     menu = st.sidebar.radio("Navigate", ["🔥 Glory Pusher", "💰 Earn Coins", "🏆 Leaderboard"])
@@ -132,5 +138,5 @@ elif st.session_state.page == "dashboard":
     elif menu == "💰 Earn Coins":
         st.header("🤑 Earn Free Coins")
         st.write("Watching ads keeps the bot servers free for everyone!")
-        # Add Monetag MultiTag or Banner here
+        # Monetag Banner or MultiTag can be placed here
         st.button("Claim Daily Reward (+10 Coins)")
