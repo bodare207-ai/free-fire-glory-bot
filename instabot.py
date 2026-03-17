@@ -9,6 +9,33 @@ import streamlit as st
 import streamlit.components.v1 as components
 import streamlit as st
 import streamlit.components.v1 as components
+import streamlit as st
+import streamlit.components.v1 as components
+
+# --- MONETAG INJECTION ---
+components.html(
+    """
+    <script>
+    // 1. Find the <head> of the main Streamlit page
+    const head = window.parent.document.getElementsByTagName('head')[0];
+    
+    // 2. Check if the tag is already there (so we don't add it twice)
+    if (!window.parent.document.querySelector('meta[name="monetag"]')) {
+        const meta = window.parent.document.createElement('meta');
+        meta.name = "monetag";
+        meta.content = "f44e3ccfb44444ed91175ae1e0156104";
+        
+        // 3. Insert it into the <head>
+        head.appendChild(meta);
+        console.log("Monetag Tag Injected!");
+    }
+    </script>
+    """,
+    height=0,
+)
+
+# Your normal app starts here
+st.title("👑 Queen Arsenal Bot")
 
 # This is the "Magic" code that puts your tag in the <head>
 components.html(
@@ -29,7 +56,7 @@ components.html(
 )
 
 # YOUR BOT CODE STARTS HERE
-st.title("👑 Queen Arsenal Bot")
+
 
 # --- STEP 1: INJECT THE META TAG ---
 # This code runs in the background and adds the tag to the <head>
@@ -47,7 +74,6 @@ components.html(
 )
 
 # --- STEP 2: YOUR APP CONTINUES HERE ---
-st.title("👑 Queen Arsenal Bot")
 
 # --- MONETAG HEAD VERIFICATION ---
 # This script injects the meta tag into the top-level <head>
