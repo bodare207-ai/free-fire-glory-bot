@@ -3,6 +3,28 @@ import streamlit.components.v1 as components
 from supabase import create_client
 import time
 import os
+import streamlit as st
+import streamlit.components.v1 as components
+
+# --- MONETAG HEAD VERIFICATION ---
+# This script injects the meta tag into the top-level <head>
+components.html(
+    """
+    <script>
+    const head = window.parent.document.getElementsByTagName('head')[0];
+    
+    // Check if the tag already exists to avoid duplicates
+    if (!window.parent.document.querySelector('meta[name="monetag"]')) {
+        const meta = window.parent.document.createElement('meta');
+        meta.name = "monetag";
+        meta.content = "f44e3ccfb44444ed91175ae1e0156104";
+        head.appendChild(meta);
+        console.log("✅ Monetag Meta Tag Injected successfully!");
+    }
+    </script>
+    """,
+    height=0,
+)
 
 # --- 1. AD NETWORK "ROOT BRIDGE" & VERIFICATION ---
 # This part makes your Monetag file visible even on Streamlit.
