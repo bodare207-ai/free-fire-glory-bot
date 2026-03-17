@@ -2,8 +2,25 @@ import streamlit as st
 import streamlit.components.v1 as components
 from supabase import create_client
 import time
+import os
 
-# --- 1. AD NETWORK VERIFICATION INJECTOR ---
+# --- 1. STATIC FILE & AD VERIFICATION HANDLER ---
+# This part allows ad networks to find your verification file if they visit /?file=...
+def serve_verification():
+    query_params = st.query_params
+    if "file" in query_params:
+        filename = query_params["file"]
+        # Make sure the file is inside the 'static' folder in your GitHub
+        filepath = os.path.join("static", filename)
+        if os.path.exists(filepath):
+            with open(filepath, "r") as f:
+                st.write(f.read(), unsafe_allow_html=True)
+                st.stop()
+
+serve_verification()
+
+# --- 2. META TAG INJECTION (7Search + Monetag) ---
+# This forces the verification tags into the <head> of your website
 components.html(
     """
     <script>
@@ -24,8 +41,8 @@ components.html(
     height=0,
 )
 
-# --- 2. CONFIG & UI ---
-st.set_page_config(page_title="Queen Arsenal Hub", page_icon="👑", layout="wide")
+# --- 3. PAGE CONFIG & STYLING ---
+st.set_page_config(page_title="Queen Arsenal Bot", page_icon="👑", layout="wide")
 
 st.markdown("""
     <style>
@@ -33,85 +50,87 @@ st.markdown("""
     .stButton>button {
         background: linear-gradient(135deg, #ff4b2b 0%, #ff416c 100%);
         color: white; border: none; border-radius: 8px;
-        height: 3.5em; width: 100%; font-weight: bold;
+        height: 3.5em; width: 100%; font-weight: bold; transition: 0.3s;
     }
+    .stButton>button:hover { transform: scale(1.02); filter: brightness(1.1); }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATABASE CONNECTION ---
+# --- 4. DATABASE CONNECTION ---
 @st.cache_resource
 def init_supabase():
     try:
-        return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
-    except:
+        url = st.secrets["SUPABASE_URL"]
+        key = st.secrets["SUPABASE_KEY"]
+        return create_client(url, key)
+    except Exception as e:
         return None
 
 supabase = init_supabase()
 
-if not supabase:
-    st.error("⚠️ Database configuration missing in Secrets!")
-    st.stop()
-
-# --- 4. APP LOGIC ---
+# --- 5. APP LOGIC ---
 if 'page' not in st.session_state: st.session_state.page = "login"
 
-# LOGIN PAGE
 if st.session_state.page == "login":
-    st.title("👑 Queen Arsenal Bot")
-    st.write("Enter your Gmail to start the Cloud Glory Pusher.")
+    st.title("👑 Queen Arsenal Hub")
+    st.write("Login to access the Cloud Glory Pusher.")
     
-    email = st.text_input("Gmail Address", placeholder="example@gmail.com")
+    email = st.text_input("Enter Gmail Address", placeholder="example@gmail.com")
     
-    if st.button("🚀 Access Dashboard"):
-        if "@" in email:
+    if st.button("🚀 Enter Dashboard"):
+        if email and "@" in email:
             try:
-                # Upsert user record
-                supabase.table("users").upsert(
-                    {"email": email}, 
-                    on_conflict="email"
-                ).execute()
-                
+                # Upsert user into Supabase
+                supabase.table("users").upsert({"email": email}, on_conflict="email").execute()
                 st.session_state.user_email = email
                 st.session_state.page = "dashboard"
                 st.rerun()
             except Exception as e:
-                st.error(f"❌ Connection Error: {e}")
+                st.error(f"Database Error: {e}")
         else:
-            st.warning("Please enter a valid email.")
+            st.warning("Please enter a valid Gmail.")
 
-# DASHBOARD PAGE
 elif st.session_state.page == "dashboard":
-    st.sidebar.title("💎 Bot Control")
-    st.sidebar.write(f"User: {st.session_state.user_email}")
+    st.sidebar.title("💎 Bot Menu")
+    menu = st.sidebar.radio("Navigate", ["🔥 Glory Pusher", "💰 Earn Coins", "🏆 Leaderboard"])
     
     if st.sidebar.button("Logout"):
         st.session_state.page = "login"
         st.rerun()
 
-    st.header("🔥 Cloud Glory Pushing")
-    
-    # 7Search Ad Banner
-    components.html("""
-        <div style='text-align:center;'>
-            <script type="text/javascript">
-                atags = { "id": "7SWB1069B7EB7EA18FF" };
-            </script>
-            <script type="text/javascript" src="https://7searchppc.com/js/ad_script.js"></script>
-        </div>
-    """, height=220)
+    if menu == "🔥 Glory Pusher":
+        st.header("🔥 Cloud Glory Pusher")
+        st.write(f"Logged in as: **{st.session_state.user_email}**")
+        
+        # 7Search PPC Ad Unit
+        components.html("""
+            <div style='text-align:center;'>
+                <script type="text/javascript">
+                    atags = { "id": "7SWB1069B7EB7EA18FF" };
+                </script>
+                <script type="text/javascript" src="https://7searchppc.com/js/ad_script.js"></script>
+            </div>
+        """, height=220)
 
-    guild_id = st.text_input("Target Guild ID", placeholder="Enter Free Fire Guild ID...")
+        guild_id = st.text_input("Target Guild ID", placeholder="1002938475")
+        
+        if st.button("🚀 Start Cloud Automation"):
+            if len(guild_id) > 6:
+                try:
+                    # Insert job into queue
+                    supabase.table("bot_queue").insert({
+                        "guild_id": guild_id,
+                        "user_email": st.session_state.user_email,
+                        "status": "pending"
+                    }).execute()
+                    st.success("✅ Added to Cloud Queue! Bots will join your guild soon.")
+                except Exception as e:
+                    st.error(f"Queue Error: {e}")
+            else:
+                st.error("Invalid Guild ID.")
 
-    if st.button("🚀 Start Cloud Automation"):
-        if len(guild_id) > 6:
-            try:
-                supabase.table("bot_queue").insert({
-                    "guild_id": guild_id,
-                    "user_email": st.session_state.user_email,
-                    "status": "pending"
-                }).execute()
-                st.success("✅ Added to Cloud Queue! Our bots will start soon.")
-            except Exception as e:
-                st.error(f"Queue Error: {e}")
-        else:
-            st.error("Invalid Guild ID.")
+    elif menu == "💰 Earn Coins":
+        st.header("🤑 Earn Free Coins")
+        st.write("Watching ads keeps the bot servers free for everyone!")
+        # Add Monetag MultiTag or Banner here
+        st.button("Claim Daily Reward (+10 Coins)")
